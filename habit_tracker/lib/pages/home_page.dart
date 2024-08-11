@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:habit_tracker/components/habit_tile.dart';
 import 'package:habit_tracker/components/my_drawer.dart';
+import 'package:habit_tracker/components/my_heat_map.dart';
 import 'package:habit_tracker/database/habit_database.dart';
 import 'package:habit_tracker/models/habit.dart';
 import 'package:habit_tracker/util/habit_util.dart';
@@ -154,6 +155,41 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      // styles
+
+      appBar: AppBar(
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        foregroundColor: Theme.of(context).colorScheme.inversePrimary,
+
+      ),
+      drawer: const MyDrawer(),   
+      body: ListView(
+        children: [
+          // heatmap
+          _buildHeatMap(),
+
+          // habit list
+          _buildHabitList(),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: createNewHabit,
+        elevation: 0.0,
+        backgroundColor: Theme.of(context).colorScheme.tertiary,
+
+        child: Icon(
+          color: Theme.of(context).colorScheme.inversePrimary,
+
+          Icons.add,
+          ),
+      ),
+    );
+  }
+
   Widget _buildHabitList() {
     // habit db
     final habitDatabase = context.watch<HabitDatabase>();
@@ -163,6 +199,8 @@ class _HomePageState extends State<HomePage> {
 
     return ListView.builder(
       itemCount: currentHabits.length,
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       itemBuilder: (context, index) {
         // get habit by index
         final habit = currentHabits[index];
@@ -182,30 +220,25 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      // styles
+  Widget _buildHeatMap() {
+    // habit database
+    final habitDatabase = context.watch<HabitDatabase>();
 
-      appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.transparent,
-        foregroundColor: Theme.of(context).colorScheme.inversePrimary,
+    // current habits
+    List<Habit> currentHabits = habitDatabase.currentHabits;
 
-      ),
-      drawer: const MyDrawer(),   
-      body: _buildHabitList(),
-      floatingActionButton: FloatingActionButton(
-        onPressed: createNewHabit,
-        elevation: 0.0,
-        backgroundColor: Theme.of(context).colorScheme.tertiary,
-
-        child: Icon(
-          color: Theme.of(context).colorScheme.inversePrimary,
-
-          Icons.add,
-          ),
-      ),
+    return FutureBuilder(
+      future: habitDatabase.getFirstLaunchDate(), 
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          return MyHeatMap(
+            startDate: snapshot.data!, 
+            datasets: prepHeatMapDataset(currentHabits),
+          );
+        } else {
+          return Container();
+        }
+     }
     );
   }
 }
